@@ -4,11 +4,11 @@
     "title": "Email Verification API",
     "version": "1.0.0",
     "description": "Validate email addresses with syntax and normalization, domain and MX lookups, disposable-domain detection, role-address checks and optional SMTP probing. One request returns a status, a 0-100 confidence score and a detailed check breakdown.\n\nRapidAPI handles consumer API keys, quotas and billing. The backend can also require a shared X-RapidAPI-Proxy-Secret, which RapidAPI injects at the gateway.",
-    "termsOfService": "https://your-domain.example/terms",
+    "termsOfService": "https://email-verification-api-6z7j.onrender.com/terms",
     "contact": {
       "name": "API Support",
-      "url": "https://your-domain.example",
-      "email": "support@your-domain.example"
+      "url": "https://email-verification-api-6z7j.onrender.com",
+      "email": "support@email-verification-api-6z7j.onrender.com"
     },
     "license": {
       "name": "MIT",
@@ -17,7 +17,7 @@
   },
   "servers": [
     {
-      "url": "https://your-domain.example",
+      "url": "https://email-verification-api-6z7j.onrender.com",
       "description": "Production"
     }
   ],
