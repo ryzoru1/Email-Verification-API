@@ -1,0 +1,560 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "Email Verification API",
+    "version": "1.0.0",
+    "description": "Validate email addresses with syntax and normalization, domain and MX lookups, disposable-domain detection, role-address checks and optional SMTP probing. One request returns a status, a 0-100 confidence score and a detailed check breakdown.\n\nRapidAPI handles consumer API keys, quotas and billing. The backend can also require a shared X-RapidAPI-Proxy-Secret, which RapidAPI injects at the gateway.",
+    "termsOfService": "https://your-domain.example/terms",
+    "contact": {
+      "name": "API Support",
+      "url": "https://your-domain.example",
+      "email": "support@your-domain.example"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://your-domain.example",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Verification",
+      "description": "Verify one address or a batch of addresses."
+    },
+    {
+      "name": "Health",
+      "description": "Liveness and readiness checks for the gateway and uptime monitors."
+    }
+  ],
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Health check",
+        "description": "Return service status and version. Suitable for a RapidAPI health check.",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Service is healthy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                },
+                "example": {
+                  "status": "ok",
+                  "service": "Email Verification API",
+                  "version": "1.0.0",
+                  "environment": "production"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ping": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Ping",
+        "description": "Minimal liveness endpoint.",
+        "operationId": "getPing",
+        "responses": {
+          "200": {
+            "description": "Service is alive.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PingResponse"
+                },
+                "example": {
+                  "message": "pong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/verify": {
+      "post": {
+        "tags": ["Verification"],
+        "summary": "Verify a single email address",
+        "description": "Run syntax, domain/MX, disposable, role-based and optional SMTP checks on one address. The result contains a stable status, a 0-100 score and every check result.",
+        "operationId": "verifyEmail",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailVerifyRequest"
+              },
+              "examples": {
+                "standard": {
+                  "summary": "Standard verification",
+                  "value": {
+                    "email": "user@example.com",
+                    "smtp_check": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailVerificationResult"
+                },
+                "example": {
+                  "email": "user@example.com",
+                  "normalized_email": "user@example.com",
+                  "status": "valid",
+                  "score": 85,
+                  "reason": "Email appears valid based on syntax, DNS, and MX checks.",
+                  "domain": "example.com",
+                  "checks": {
+                    "syntax": true,
+                    "domain_exists": true,
+                    "mx_records": true,
+                    "disposable": false,
+                    "role_based": false,
+                    "smtp": null
+                  },
+                  "suggestions": []
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Empty or invalid input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "detail": "Email is required."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key / proxy secret.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "detail": "Invalid or missing API key."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request body failed schema validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Plan quota or rate limit exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "detail": "Too many requests."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "detail": "Internal server error."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/verify/bulk": {
+      "post": {
+        "tags": ["Verification"],
+        "summary": "Verify multiple email addresses",
+        "description": "Verify up to MAX_BULK_EMAILS addresses in one request (100 by default). Returns one result per address plus aggregate counts and an average score.",
+        "operationId": "verifyEmailBulk",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkEmailVerifyRequest"
+              },
+              "examples": {
+                "batch": {
+                  "summary": "Three addresses",
+                  "value": {
+                    "emails": ["user@example.com", "support@example.com", "test@mailinator.com"],
+                    "smtp_check": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bulk verification result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkEmailVerificationResult"
+                },
+                "example": {
+                  "total": 3,
+                  "results": [
+                    {
+                      "email": "user@example.com",
+                      "normalized_email": "user@example.com",
+                      "status": "valid",
+                      "score": 85,
+                      "reason": "Email appears valid based on syntax, DNS, and MX checks.",
+                      "domain": "example.com",
+                      "checks": {
+                        "syntax": true,
+                        "domain_exists": true,
+                        "mx_records": true,
+                        "disposable": false,
+                        "role_based": false,
+                        "smtp": null
+                      },
+                      "suggestions": []
+                    }
+                  ],
+                  "summary": {
+                    "valid": 1,
+                    "invalid": 0,
+                    "risky": 2,
+                    "unknown": 0,
+                    "average_score": 61.33
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No usable addresses or batch size exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "detail": "Too many emails. Maximum allowed per request is 100."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key / proxy secret.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request body failed schema validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Plan quota or rate limit exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "required": ["status", "service", "version", "environment"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "ok"
+          },
+          "service": {
+            "type": "string",
+            "example": "Email Verification API"
+          },
+          "version": {
+            "type": "string",
+            "example": "1.0.0"
+          },
+          "environment": {
+            "type": "string",
+            "example": "production"
+          }
+        }
+      },
+      "PingResponse": {
+        "type": "object",
+        "required": ["message"],
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "pong"
+          }
+        }
+      },
+      "EmailVerifyRequest": {
+        "type": "object",
+        "required": ["email"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Email address to verify.",
+            "example": "user@example.com"
+          },
+          "smtp_check": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Override the server SMTP check setting for this request."
+          }
+        }
+      },
+      "BulkEmailVerifyRequest": {
+        "type": "object",
+        "required": ["emails"],
+        "properties": {
+          "emails": {
+            "type": "array",
+            "description": "List of email addresses to verify.",
+            "items": {
+              "type": "string"
+            },
+            "example": ["user@example.com", "test@mailinator.com"]
+          },
+          "smtp_check": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Override the server SMTP check setting for this request."
+          }
+        }
+      },
+      "VerificationStatus": {
+        "type": "string",
+        "description": "Overall verification outcome.",
+        "enum": ["valid", "invalid", "risky", "unknown"]
+      },
+      "VerificationChecks": {
+        "type": "object",
+        "required": ["syntax", "domain_exists", "mx_records", "disposable", "role_based", "smtp"],
+        "properties": {
+          "syntax": {
+            "type": "boolean",
+            "description": "Whether the email syntax is valid."
+          },
+          "domain_exists": {
+            "type": "boolean",
+            "description": "Whether the domain resolves."
+          },
+          "mx_records": {
+            "type": "boolean",
+            "description": "Whether MX records were found."
+          },
+          "disposable": {
+            "type": "boolean",
+            "description": "Whether the domain is a known disposable provider."
+          },
+          "role_based": {
+            "type": "boolean",
+            "description": "Whether the local part looks role-based."
+          },
+          "smtp": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "SMTP mailbox result when enabled; null when not performed."
+          }
+        }
+      },
+      "EmailVerificationResult": {
+        "type": "object",
+        "required": [
+          "email",
+          "normalized_email",
+          "status",
+          "score",
+          "reason",
+          "checks"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Original input.",
+            "example": "user@example.com"
+          },
+          "normalized_email": {
+            "type": "string",
+            "description": "Normalized address suitable for storage.",
+            "example": "user@example.com"
+          },
+          "status": {
+            "$ref": "#/components/schemas/VerificationStatus"
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Deliverability confidence score.",
+            "example": 85
+          },
+          "reason": {
+            "type": "string",
+            "description": "Human-readable explanation of the result."
+          },
+          "domain": {
+            "type": "string",
+            "nullable": true,
+            "description": "Domain extracted from the address.",
+            "example": "example.com"
+          },
+          "checks": {
+            "$ref": "#/components/schemas/VerificationChecks"
+          },
+          "suggestions": {
+            "type": "array",
+            "description": "Actionable hints for the caller.",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "BulkSummary": {
+        "type": "object",
+        "required": ["valid", "invalid", "risky", "unknown", "average_score"],
+        "properties": {
+          "valid": {
+            "type": "integer",
+            "example": 1
+          },
+          "invalid": {
+            "type": "integer",
+            "example": 0
+          },
+          "risky": {
+            "type": "integer",
+            "example": 2
+          },
+          "unknown": {
+            "type": "integer",
+            "example": 0
+          },
+          "average_score": {
+            "type": "number",
+            "format": "float",
+            "example": 61.33
+          }
+        }
+      },
+      "BulkEmailVerificationResult": {
+        "type": "object",
+        "required": ["total", "results", "summary"],
+        "properties": {
+          "total": {
+            "type": "integer",
+            "example": 3
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmailVerificationResult"
+            }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/BulkSummary"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["detail"],
+        "properties": {
+          "detail": {
+            "type": "string",
+            "description": "Human-readable error message."
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "required": ["loc", "msg", "type"],
+        "properties": {
+          "loc": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "msg": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "HTTPValidationError": {
+        "type": "object",
+        "required": ["detail"],
+        "properties": {
+          "detail": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "status": "ready_after_deployment_and_placeholder_replacement",
+  "name": "Email Verification API",
+  "slug": "email-verification-api",
+  "short_description": "Validate email addresses with syntax, DNS/MX, disposable-domain, role-based and optional SMTP checks in one fast request.",
+  "long_description": "Email Verification API helps you catch bad addresses before they reach your database. Send one address or a batch and get a stable status, a 0-100 confidence score, a plain-language reason and a detailed check breakdown covering syntax, domain resolution, MX records, disposable domains, role-based local parts and optional SMTP probing. Use it for signup validation, lead-list cleaning, CRM hygiene and fraud reduction.",
+  "category": "Data",
+  "tags": ["email", "validation", "data-quality", "fraud-prevention", "marketing"],
+  "logo": "website/assets/rapidapi-icon-512.png",
+  "logo_variants": {
+    "vector_standard": "website/assets/rapidapi-icon.svg",
+    "vector_shield": "website/assets/rapidapi-icon-shield.svg",
+    "png_512": "website/assets/rapidapi-icon-512.png",
+    "png_256": "website/assets/rapidapi-icon-256.png",
+    "render_3d_512": "website/assets/rapidapi-icon-3d-512.png"
+  },
+  "website": "https://your-domain.example/",
+  "terms_of_use": "https://your-domain.example/terms",
+  "privacy_policy": "https://your-domain.example/privacy",
+  "support_email": "support@your-domain.example",
+  "base_url": "https://your-domain.example",
+  "health_check_url": "https://your-domain.example/api/v1/health",
+  "openapi_file": "openapi.json",
+  "backend_repo": "https://github.com/your-org/email-verification-api",
+  "hosting_provider": "Any Docker host with public HTTPS (Railway, Render, Fly.io, VPS + Caddy)",
+  "visibility": "public",
+  "proxy_secret_env": "RAPIDAPI_PROXY_SECRET",
+  "auth_headers": [
+    "X-RapidAPI-Key (added by RapidAPI for consumers)",
+    "X-RapidAPI-Host (added by RapidAPI for consumers)",
+    "X-RapidAPI-Proxy-Secret (injected by RapidAPI at the gateway; validated by the backend)"
+  ],
+  "pricing": [
+    {
+      "name": "Basic",
+      "price_usd_per_month": 0,
+      "requests_per_month": 1000,
+      "rate_limit_per_minute": 60,
+      "bulk_max_emails": 10,
+      "overage": "hard limit"
+    },
+    {
+      "name": "Pro",
+      "price_usd_per_month": 19.99,
+      "requests_per_month": 25000,
+      "rate_limit_per_minute": 300,
+      "bulk_max_emails": 50,
+      "overage": "hard limit or per-request overage"
+    },
+    {
+      "name": "Ultra",
+      "price_usd_per_month": 79.99,
+      "requests_per_month": 250000,
+      "rate_limit_per_minute": 1000,
+      "bulk_max_emails": 100,
+      "overage": "hard limit or per-request overage"
+    }
+  ],
+  "pricing_note": "Suggested launch pricing only. Confirm costs, adjust prices/quotas in RapidAPI Studio and update website/index.html to match before publishing.",
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/api/v1/verify",
+      "name": "Verify a single email address",
+      "description": "Run syntax, DNS/MX, disposable, role and optional SMTP checks on one address."
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/verify/bulk",
+      "name": "Verify multiple email addresses",
+      "description": "Verify up to MAX_BULK_EMAILS addresses (100 by default) and return per-item results plus a summary."
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/health",
+      "name": "Health check",
+      "description": "Return service status and version. Use as the RapidAPI health check."
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ping",
+      "name": "Ping",
+      "description": "Minimal liveness endpoint."
+    }
+  ],
+  "launch_checklist": [
+    "Deploy the API behind public HTTPS with a valid certificate.",
+    "Replace https://your-domain.example and support@your-domain.example in website/index.html, website/terms.html, website/privacy.html, openapi.json and this file.",
+    "Open /, /terms and /privacy in a browser and confirm they render.",
+    "Paste the RapidAPI proxy secret into RAPIDAPI_PROXY_SECRET and redeploy.",
+    "Verify GET /api/v1/health returns 200 with the proxy secret configured.",
+    "Import openapi.json into RapidAPI Studio and set the base URL.",
+    "Create Basic, Pro and Ultra plans and align limits with website/index.html.",
+    "Set the Website, Terms of use and support contact fields in Hub Listing.",
+    "Run the RapidAPI endpoint tester for both verify endpoints.",
+    "Publish, then test with a real consumer key from a clean client."
+  ],
+  "notes": [
+    "SMTP checking is disabled by default because many mail providers block or rate-limit probes. Keep it opt-in.",
+    "The disposable-domain list is static; refresh app/data/disposable_domains.py periodically.",
+    "The backend does not store submitted email addresses as a contact database.",
+    "RapidAPI enforces plan quotas and billing. The backend's own auth is an extra gateway check, not a billing system."
+  ]
+}
